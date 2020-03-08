@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>{{ page_title }}</title>
+	<link rel="stylesheet" href="{{ url_for("static", filename="style.css") }}" type="text/css">
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Oswald:400,700" type="text/css">
+</head>
+<body>
+
+	<div class="header">
+
+		<div class="wrapper">
+
+			<h1 class="branding-title"><a href="{{ url_for("index") }}">Shirts 4 Mike</a></h1>
+			<h1>&nbsp;Welcome {{ username }}!</h1>
+			<a href="/logout">logout</a>
+
+			<ul class="nav">
+				<li class="shirts {% if section == "shirts" %}on{% endif %}"><a href="{{ url_for("shirts") }}">Shirts</a></li>
+				<li class="contact {% if section == "contact" %}on{% endif %}"><a href="{{ url_for("contact") }}">Contact</a></li>
+				<li class="cart"><a href="/cart" >Shopping Cart</a></li>
+			</ul>
+
+		</div>
+
+	</div>
+
+	<div id="content">
+	{% block body %}{% endblock %}
+	</div>
+
+	<div class="footer">
+
+		<div class="wrapper">
+
+			<ul>		
+				<li><a href="http://twitter.com/treehouse">Twitter</a></li>
+				<li><a href="https://www.facebook.com/TeamTreehouse">Facebook</a></li>
+			</ul>
+
+			<p>&copy;{{ current_year }} Shirts 4 Mike</p>
+
+		</div>
+	
+	</div>
+
+	{% for message in get_flashed_messages() %}
+		<script>
+			//alert("{{ message }}");
+		</script>
+	{% endfor %}
+
+</body>
+</html>
