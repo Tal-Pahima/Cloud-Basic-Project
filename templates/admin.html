@@ -11,11 +11,9 @@
 {% if orders is defined %}
 <h4> Your Order: </h4>
 	{{ orders|safe }}
+{% else %}
 <form action="/submit_order" method="post">
-</table>
-{% if cart_quantity > 0 %}
-<input type="submit" value="Submit New Order">
-{% endif %}
+<input type="submit" value="Submit Order">
 {% endif %}
 </form>
 </body>

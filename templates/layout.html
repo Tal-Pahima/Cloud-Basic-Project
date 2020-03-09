@@ -12,8 +12,15 @@
 		<div class="wrapper">
 
 			<h1 class="branding-title"><a href="{{ url_for("index") }}">Shirts 4 Mike</a></h1>
-			<h1>&nbsp;Welcome {{ username }}!</h1>
-			<a href="/logout">logout</a>
+			{% if username is defined %}
+				<h1>&nbsp;Welcome {{ username }}!</h1>
+				<a href="/logout">logout</a>
+			{% else %}
+				<a href="/login">login</a>
+			{% endif %}
+			{% if username == "admin" %}
+				<br><a href="/admin">admin page</a>
+			{% endif %}
 
 			<ul class="nav">
 				<li class="shirts {% if section == "shirts" %}on{% endif %}"><a href="{{ url_for("shirts") }}">Shirts</a></li>

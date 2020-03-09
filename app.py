@@ -15,6 +15,8 @@ from flask import (
 
 import mysql.connector
 import sendgrid
+import time
+import random
 from datetime import date
 
 # App setup
@@ -31,14 +33,16 @@ with open(sendgrid_file) as f:
 
 
 # Global Variables
+products_info_deleted = []
 products_info = [
     {
         "id": "101",
         "name": "Logo Shirt, Red",
         "img": "shirt-101.jpg",
         "price": 18,
+        "quantity": 10,
         "paypal": "LNRBY7XSXS5PA",
-        "sizes": ["Small", "Medium", "Large"]
+        "sizes": ["Small"]
     },
 
     {
@@ -46,8 +50,9 @@ products_info = [
         "name": "Mike the Frog Shirt, Black",
         "img": "shirt-102.jpg",
         "price": 20,
+        "quantity": 10,
         "paypal": "XP8KRXHEXMQ4J",
-        "sizes": ["Small", "Medium", "Large"]
+        "sizes": ["Small"]
     },
 
     {
@@ -55,8 +60,9 @@ products_info = [
         "name": "Mike the Frog Shirt, Blue",
         "img": "shirt-103.jpg",
         "price": 20,
+        "quantity": 10,
         "paypal": "95C659J3VZGNJ",
-        "sizes": ["Small", "Medium", "Large"]
+        "sizes": ["Small"]
     },
 
     {
@@ -64,8 +70,9 @@ products_info = [
         "name": "Logo Shirt, Green",
         "img": "shirt-104.jpg",
         "price": 18,
+        "quantity": 10,
         "paypal": "Z5EY4SJN64SLU",
-        "sizes": ["Small", "Medium", "Large"]
+        "sizes": ["Small"]
     },
 
     {
@@ -73,8 +80,9 @@ products_info = [
         "name": "Mike the Frog Shirt, Yellow",
         "img": "shirt-105.jpg",
         "price": 25,
+        "quantity": 10,
         "paypal": "RYAGP5EWG4V4G",
-        "sizes": ["Small", "Medium", "Large"]
+        "sizes": ["Small"]
     },
 
     {
@@ -82,8 +90,9 @@ products_info = [
         "name": "Logo Shirt, Gray",
         "img": "shirt-106.jpg",
         "price": 20,
+        "quantity": 10,
         "paypal": "QYHDD4N4SMUKN",
-        "sizes": ["Small", "Medium", "Large"]
+        "sizes": ["Small"]
     },
 
     {
@@ -91,8 +100,9 @@ products_info = [
         "name": "Logo Shirt, Teal",
         "img": "shirt-107.jpg",
         "price": 20,
+        "quantity": 10,
         "paypal": "RSDD7RPZFPQTQ",
-        "sizes": ["Small", "Medium", "Large"]
+        "sizes": ["Small"]
     },
 
     {
@@ -100,8 +110,9 @@ products_info = [
         "name": "Mike the Frog Shirt, Orange",
         "img": "shirt-108.jpg",
         "price": 25,
+        "quantity": 10,
         "paypal": "LFRHBPYZKHV4Y",
-        "sizes": ["Small", "Medium", "Large"]
+        "sizes": ["Small"]
     }
 ]
 
@@ -149,9 +160,6 @@ def get_list_view_html(product):
 
 @app.route("/")
 def index():
-    context = {"page_title": "Shirts 4 Mike", "current_year": date.today().year}
-    if 'username' not in session:
-        return render_template("login.html", **context)
     """Function for Shirts4Mike Homepage"""
     context = {"page_title": "Shirts 4 Mike", "current_year": date.today().year}
     counter = 0
@@ -163,7 +171,8 @@ def index():
                 Markup(get_list_view_html(product))
             )
     context["product_data"] = Markup("".join(product_data))
-    context['username'] = session['username']
+    if 'username' in session:
+        context['username'] = session['username']
     return render_template("index.html", **context)
 
 
@@ -235,14 +244,45 @@ def send():
 def order():
     item = request.form.get('item_name')
     size = request.form.get('os0')
+    price = request.form.get('price')
     username = session['username']
     add_item = ("REPLACE INTO cart "
-              "(user, item, size) "
-              "VALUES (%s, %s, %s)")
-    item_data = (username,item,size)
+              "(user, item, size, price) "
+              "VALUES (%s, %s, %s, %s)")
+    item_data = (username,item,size,price)
     cursor.execute(add_item,item_data)
     cnx.commit()
     return redirect('/')
+
+@app.route("/empty_cart",methods=['POST'])
+def empty_cart():
+    empty_cart = "delete from cart where user = '{}'".format(session['username'])
+    cursor.execute(empty_cart)
+    cnx.commit()
+    return redirect('/cart')
+
+@app.route("/submit_order",methods=['POST'])
+def submit_order():
+    username = session['username']
+    date = time.strftime('%Y-%m-%d %H:%M:%S')
+    submit_order = ("insert INTO orders "
+              "(order_num, user, order_date) "
+              "VALUES (%s, %s, %s)")
+    item_data = (random.randrange(30001,999999),username,date)
+    cursor.execute(submit_order,item_data)
+    cnx.commit()
+    query = "select id,item from cart where user ='{}'"
+    cursor.execute(query.format(session['username']))
+    for (a,b) in cursor:
+        print (b)
+        for idx,product in enumerate(products_info):
+            if product["name"] == b:
+                if product["quantity"] == 1:
+                    products_info.remove(product)
+                else:
+                    products_info[idx]["quantity"] -= 1
+    empty_cart() 
+    return redirect('/cart')
 
 # Handle login
 @app.route('/login', methods=['GET', 'POST'])
@@ -265,23 +305,56 @@ def login():
 @app.route('/cart', methods=['GET'])
 def cart():
     context = {"page_title": "Shirts 4 Mike", "current_year": date.today().year}
-    query = "select * from cart where user = '{}'"
+    query = "select item,size,price,count(*) from cart where user ='{}' group by item,size,price"
     cursor.execute(query.format(session['username']))
-    rows = ''
+    context['cart_quantity'] = 0
+    rows = '<table border=1><tr><td>Item<td>Size<td>Price<td>Count'
     for (a,b,c,d) in cursor:
-        rows += "{},{},{},{}<br>".format(a,b,c,d)
+        rows += "<tr><td>{0}<td>{1}<td>{2}<td>{3}</td><br>".format(a,b,c,d)
+        context['cart_quantity'] += 1
+    rows += "</table>"
     context['cart'] = rows
-    context['test'] = 'test'
+    query = "select order_num, order_date from orders where user='{}'"
+    cursor.execute(query.format(session['username']))
+    rows = '<table border=1><tr><td>Order#<td>Order Date'
+    for (a,b) in cursor:
+        rows += "<tr><td>{0}<td>{1}<br>".format(a,b)
+    context['orders'] = rows
     return render_template("cart.html", **context)
 
+@app.route('/admin', methods=['GET'])
+def admin():
+    context = {"page_title": "Shirts 4 Mike", "current_year": date.today().year}
+    if 'username' in session:
+        if session['username'] == 'admin':
+            return render_template("admin.html", **context)
+    else:
+        return redirect('/')
+
+@app.route('/admin_delete', methods=['POST'])
+def admin_delete():
+    for idx,product in enumerate(products_info):
+        if product["id"] == request.form.get("id"):
+            if product["quantity"] == 1:
+                products_info.remove(product)
+            else:
+                products_info[idx]["quantity"] -= 1
+    return redirect('/')
+
+@app.route('/admin_add', methods=['POST'])
+def admin_add():
+    for idx,product in enumerate(products_info):
+        if product["id"] == request.form.get("id"):
+            products_info[idx]["quantity"] += 1
+    return redirect('/')
 # Handle logout
 @app.route('/logout', methods=['GET'])
 def logout():
     session.pop('username', None)
-    return redirect('/login')
+    return redirect('/')
 
 def check_password(username,password):
-    if username == 'yuri':
+    if username == 'yuri' or username == 'admin':
         if password == '123456':
             return True
     return False
