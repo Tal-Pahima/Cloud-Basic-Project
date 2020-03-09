@@ -18,6 +18,7 @@
 
                 <form action="/order" method="post">
                     <input type="hidden" name="username" value="{{username}}">
+			<input type="hidden" name="price" value='{{product["price"]}}'>
                     <input type="hidden" name="cmd" value="_s-xclick">
                     <input type="hidden" name="hosted_button_id" value="{{ product["paypal"] }}">
                     <input type="hidden" name="item_name" value="{{ product["name"] }}">
@@ -38,7 +39,18 @@
                     </table>
                     <input type="submit" value="Add to Cart" name="submit">
                 </form>
-
+		{% if username == "admin" %}
+		<h3>Admin Section:</h3>
+		<h4>&nbsp;&nbsp;Quantity: {{product["quantity"]}}</h4>
+		<form action="/admin_delete" method="post">
+			<input type="hidden" name="id" value="{{product["id"]}}">
+			<input type="submit" value="Delete single item from warehouse">
+		</form>
+		<form action="/admin_add" method="post">
+			<input type="hidden" name="id" value="{{product["id"]}}">
+			<input type="submit" value="Add single item to warehouse">
+		</form>
+		{% endif %}
                 <p class="note-designer">* All shirts are designed by Mike the Frog.</p>
 
             </div>
