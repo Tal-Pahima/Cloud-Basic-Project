@@ -1,0 +1,11 @@
+[Unit]
+Description=Manage flask web server of python store
+Requires=network.target
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=python3 /opt/Basic-Proj/Python-Flask-Store/app.py
+
+[Install]
+WantedBy=multi-user.target

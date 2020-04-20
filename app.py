@@ -362,7 +362,7 @@ def check_password(username,password):
 # Run application
 if __name__ == "__main__":
     cnx = mysql.connector.connect(user='admin', password='admin123456',
-                              host='mysql-project.choogkasoh9t.us-east-1.rds.amazonaws.com',
+                              host='basic-proj-db.ctpseagihjai.us-east-1.rds.amazonaws.com',
                               database='shop')
     cursor = cnx.cursor()
     app.run(debug=True,host='0.0.0.0')
